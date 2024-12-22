@@ -14,7 +14,7 @@
 
 ## Dataset
 
-This repository contains a dataset of **2D poses** estimated from internet videos of experienced boxers performing shadow boxing. The keypoints were estimated using the [RTMO pose estimator](https://github.com/open-mmlab/mmpose/tree/main/projects/rtmo). Each sample consists of a series of frames, where each frame has 2D keypoint coordinates representing the pose of a boxer.
+This repository contains a dataset of **2D poses** estimated from internet videos of experienced boxers performing shadow boxing. The keypoints were estimated using the [RTMO pose estimator](https://github.com/open-mmlab/mmpose/tree/main/projects/rtmo) implemented through fast and easy-to-use [rtmlib](https://github.com/Tau-J/rtmlib). Each sample consists of a series of frames, where each frame has 2D keypoint coordinates representing the pose of a boxer.
 
 ## Statistical Modeling: GMMs & VAEs
 

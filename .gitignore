@@ -1,1 +1,4 @@
-/videos/
+/dataset/videos/
+/models/gmm/*
+/models/pose_estimation/*
+/models/rl_policies/*
