@@ -10,7 +10,7 @@ from rtmlib import draw_skeleton
 ############################################
 
 
-def load_pose_data_of_interest(n_files, movement_name, score_threshold=0.7):
+def load_pose_data_of_interest(n_files, movement_name, score_threshold=0.72):
     exclude_keywords = ['nose_', 'eye_', 'ear_']
     all_dfs = []
 
@@ -121,7 +121,7 @@ def draw_poses_on_black_image(combined_df):
 
         # Finally, show the image with all poses
         cv2.imshow("All Poses on Black Image", black_image)
-        cv2.waitKey(15)
+        cv2.waitKey(1)
     cv2.destroyAllWindows()
 
 ############################################
@@ -132,3 +132,5 @@ if __name__ == "__main__":
     # Load your combined DataFrame
     combined_df = load_pose_data_of_interest(21, "shadow")
     draw_poses_on_black_image(combined_df)
+
+
