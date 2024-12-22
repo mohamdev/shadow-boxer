@@ -22,12 +22,30 @@ def split_data(normalized_df, test_size=0.2, random_state=42):
     train_df, test_df = train_test_split(normalized_df, test_size=test_size, random_state=random_state)
     return train_df, test_df
 
-def train_gmm(train_df, n_components=10, random_state=42):
+def train_gmm(train_df, keypoints, n_components=10, random_state=42):
     """
     Train a Gaussian Mixture Model (GMM) on the training dataset.
+
+    Parameters:
+    - train_df: DataFrame containing normalized pose data.
+    - keypoints: List of keypoints to include in the GMM training.
+    - n_components: Number of Gaussian components in the GMM.
+    - random_state: Random seed for reproducibility.
+
+    Returns:
+    - Trained GMM model.
     """
-    # Extract relevant data: drop non-keypoint columns (e.g., pose_score)
-    keypoint_columns = [col for col in train_df.columns if '_x' in col or '_y' in col]
+    # Ensure the keypoints are in the expected format
+    keypoint_columns = []
+    for kp in keypoints:
+        keypoint_columns.extend([f"{kp}_x", f"{kp}_y"])
+
+    # Validate that the specified columns exist in the DataFrame
+    missing_columns = [col for col in keypoint_columns if col not in train_df.columns]
+    if missing_columns:
+        raise ValueError(f"The following keypoint columns are missing from the DataFrame: {missing_columns}")
+
+    # Extract the relevant data
     train_data = train_df[keypoint_columns].values
 
     # Train the GMM
@@ -76,8 +94,19 @@ if __name__ == "__main__":
 
     print(f"Training set size: {len(train_df)}, Test set size: {len(test_df)}")
 
+    # Define the keypoints to include in the GMM
+    # selected_keypoints = [
+    #     'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
+    #     'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
+    #     'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
+    # ]
+
+    selected_keypoints = [
+        'left_shoulder', 'right_shoulder',
+        'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
+        'left_knee', 'right_knee']
     # Train the GMM
-    gmm = train_gmm(train_df, n_components=30)
+    gmm = train_gmm(train_df, keypoints=selected_keypoints, n_components=50)
 
     # Save the trained GMM model
     model_save_path = "../../models/gmm/shadow_boxing_gmm.pkl"
@@ -87,11 +116,12 @@ if __name__ == "__main__":
     loaded_gmm = load_gmm_model(model_save_path)
 
     # Evaluate the GMM on a random test pose
-    test_pose = test_df.iloc[0]  # Select the first pose in the test set
-    keypoint_columns = [col for col in test_df.columns if '_x' in col or '_y' in col]
-    test_pose_values = test_pose[keypoint_columns].values
+    keypoint_columns = []
+    for kp in selected_keypoints:
+        keypoint_columns.extend([f"{kp}_x", f"{kp}_y"])
 
-    likelihood = evaluate_pose_likelihood(loaded_gmm, test_pose_values)
+    test_pose = test_df.iloc[0][keypoint_columns].values  # Select the first pose in the test set
+    likelihood = evaluate_pose_likelihood(loaded_gmm, test_pose)
     print(f"Log-Likelihood of the selected test pose: {likelihood}")
 
     # Optional: Evaluate likelihoods for all test poses
