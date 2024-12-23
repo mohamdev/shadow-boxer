@@ -46,6 +46,36 @@ def load_pose_data_of_interest(n_files, movement_name, score_threshold=0.6):
 # 2) Normalize and Draw Poses
 ############################################
 
+def calculate_angle(v1, v2):
+    """Calculate the angle between two vectors."""
+    dot_product = np.dot(v1, v2)
+    magnitude = np.linalg.norm(v1) * np.linalg.norm(v2)
+    if magnitude == 0:
+        return 0.0
+    angle = np.arccos(np.clip(dot_product / magnitude, -1.0, 1.0))
+    return angle / 100  # Normalize angle by dividing by 100  # Normalize angle and ensure it stays between 0 and 1  # Normalize angle in radians
+
+def calculate_keypoint_speeds(df):
+    """Calculate normalized speed for each 2D keypoint."""
+    speeds = []
+    for idx in range(len(df)):
+        if idx == 0:
+            speeds.append({f"speed_{col}": 0 for col in df.columns if '_x' in col or '_y' in col})
+            continue
+
+        row_speed = {}
+        for col in df.columns:
+            if '_x' in col or '_y' in col:
+                keypoint = col.rsplit('_', 1)[0]
+                dx = df.at[idx, f'{keypoint}_x'] - df.at[idx - 1, f'{keypoint}_x']
+                dy = df.at[idx, f'{keypoint}_y'] - df.at[idx - 1, f'{keypoint}_y']
+                norm = np.sqrt(dx**2 + dy**2)
+                row_speed[f"speed_{col}"] = norm / 100  # Normalize by dividing by 1000
+
+        speeds.append(row_speed)
+
+    return pd.DataFrame(speeds)
+
 def normalize_pose(pose_df):
     """
     Normalize each pose to be invariant to scale and translation, 
@@ -56,6 +86,10 @@ def normalize_pose(pose_df):
     right_hip = ['right_hip_x', 'right_hip_y']
     left_shoulder = ['left_shoulder_x', 'left_shoulder_y']
     right_shoulder = ['right_shoulder_x', 'right_shoulder_y']
+    left_elbow = ['left_elbow_x', 'left_elbow_y']
+    right_elbow = ['right_elbow_x', 'right_elbow_y']
+    left_wrist = ['left_wrist_x', 'left_wrist_y']
+    right_wrist = ['right_wrist_x', 'right_wrist_y']
 
     normalized_data = []
 
@@ -83,7 +117,7 @@ def normalize_pose(pose_df):
         )
 
         # Use the mean of the distances as the scaling factor
-        scale = (left_dist + right_dist)*10
+        scale = (left_dist + right_dist)*2
 
         # Avoid division by zero
         if scale > 0:
@@ -91,87 +125,31 @@ def normalize_pose(pose_df):
                 if '_x' in col or '_y' in col:
                     translated_pose[col] /= scale
 
+        # Calculate angles
+        left_upper_arm = [
+            translated_pose[left_elbow[0]] - translated_pose[left_shoulder[0]],
+            translated_pose[left_elbow[1]] - translated_pose[left_shoulder[1]]
+        ]
+        left_lower_arm = [
+            translated_pose[left_wrist[0]] - translated_pose[left_elbow[0]],
+            translated_pose[left_wrist[1]] - translated_pose[left_elbow[1]]
+        ]
+        right_upper_arm = [
+            translated_pose[right_elbow[0]] - translated_pose[right_shoulder[0]],
+            translated_pose[right_elbow[1]] - translated_pose[right_shoulder[1]]
+        ]
+        right_lower_arm = [
+            translated_pose[right_wrist[0]] - translated_pose[right_elbow[0]],
+            translated_pose[right_wrist[1]] - translated_pose[right_elbow[1]]
+        ]
+
+        translated_pose['left_arm_angle'] = calculate_angle(left_upper_arm, left_lower_arm)
+        translated_pose['right_arm_angle'] = calculate_angle(right_upper_arm, right_lower_arm)
+
         normalized_data.append(translated_pose)
 
     return pd.DataFrame(normalized_data)
 
-
-def rescale_pose_for_display(normalized_df, width=1280, height=720):
-    """
-    Rescale normalized poses to fit within the display image dimensions.
-    """
-    scaled_data = normalized_df.copy()
-
-    # Rescale to fit image dimensions
-    scale_factor = min(width, height) / 6  # Scale to half the smaller dimension
-    for col in scaled_data.columns:
-        if '_x' in col:
-            scaled_data[col] = scaled_data[col] * scale_factor + width // 2
-        elif '_y' in col:
-            scaled_data[col] = scaled_data[col] * scale_factor + height // 2
-
-    return scaled_data
-
-# COCO-17 keypoints in standard order
-COCO_KEYPOINTS = [
-    'nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear',
-    'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
-    'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
-    'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
-]
-
-def get_keypoint_xy_and_score(row, kp_name):
-    """
-    Attempts to retrieve (x, y) for a given kp_name from the row.
-    If either x or y column is missing, return (0, 0) with score=0.
-    """
-    x_col = f'{kp_name}_x'
-    y_col = f'{kp_name}_y'
-
-    if x_col in row and y_col in row:
-        # If you trust the data is valid, set score = 1.0
-        x = float(row[x_col])
-        y = float(row[y_col])
-        # If either x,y is NaN or obviously invalid, you might set score=0 instead
-        return (x, y, 1.0)
-    else:
-        # Keypoint is missing from the DataFrame (excluded by the filter)
-        # Return default (0, 0) with score=0 so it won't draw
-        return (0.0, 0.0, 0.0)
-    
-def draw_poses_on_black_image(rescaled_df):
-    width, height = 1280, 720
-
-    for _, row in rescaled_df.iterrows():
-        black_image = np.zeros((height, width, 3), dtype=np.uint8)
-        keypoints_list = []
-        scores_list = []
-
-        for kp_name in COCO_KEYPOINTS:
-            x, y, s = get_keypoint_xy_and_score(row, kp_name)
-            keypoints_list.append([x, y])
-            scores_list.append(s)
-
-        keypoints_array = np.array(keypoints_list, dtype=np.float32)
-        scores_array = np.array(scores_list, dtype=np.float32)
-
-        black_image = draw_skeleton(
-            img=black_image,
-            keypoints=keypoints_array[None, :],
-            scores=scores_array[None, :],
-            openpose_skeleton=False,
-            kpt_thr=0.5,
-            radius=3,
-            line_width=2
-        )
-
-        cv2.imshow("Rescaled Poses", black_image)
-        cv2.waitKey(1)
-    cv2.destroyAllWindows()
-
-############################################
-# 3) Save and Load Normalized Data
-############################################
 
 def save_normalized_data(normalized_df, filepath):
     normalized_df.to_csv(filepath, index=False)
@@ -181,17 +159,24 @@ def load_normalized_data(filepath):
     return pd.read_csv(filepath)
 
 ############################################
-# 4) Main script
+# 3) Main script
 ############################################
 
 if __name__ == "__main__":
     combined_df = load_pose_data_of_interest(83, "shadow")
     normalized_df = normalize_pose(combined_df)
-    rescaled_df = rescale_pose_for_display(normalized_df)
+    speeds_df = calculate_keypoint_speeds(combined_df)
+
+    # Merge normalized poses with speeds
+    normalized_df = pd.concat([normalized_df.reset_index(drop=True), speeds_df.reset_index(drop=True)], axis=1)
 
     # Save the normalized data
     save_path = "../../dataset/2D-poses/shadow/shadow_dataset_normalized.csv"
     save_normalized_data(normalized_df, save_path)
 
-    # Draw the poses
-    draw_poses_on_black_image(rescaled_df)
+    print(f"Normalized data with angles and speeds saved to {save_path}")
+
+
+
+
+
