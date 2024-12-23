@@ -11,7 +11,7 @@ def rescale_pose_for_display(normalized_df, width=1280, height=720, rescale_fact
     scaled_data = normalized_df.copy()
 
     # Rescale to fit image dimensions
-    scale_factor = min(width, height) / rescale_factor  # Scale to half the smaller dimension
+    scale_factor = (min(width, height) / rescale_factor)*4  # Scale to half the smaller dimension
     for col in scaled_data.columns:
         if '_x' in col:
             scaled_data[col] = scaled_data[col] * scale_factor + width // 2
@@ -50,7 +50,7 @@ def get_keypoint_xy_and_score(row, kp_name):
 def draw_poses_on_black_image(rescaled_df):
     width, height = 1280, 720
 
-    for _, row in rescaled_df.iterrows():
+    for _, row in rescaled_df[900000:].iterrows():
         black_image = np.zeros((height, width, 3), dtype=np.uint8)
         keypoints_list = []
         scores_list = []

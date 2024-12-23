@@ -9,7 +9,7 @@ from rtmlib import draw_skeleton
 # 1) Load your pose data
 ############################################
 
-def load_pose_data_of_interest(n_files, movement_name, score_threshold=0.72):
+def load_pose_data_of_interest(n_files, movement_name, score_threshold=0.6):
     exclude_keywords = ['nose_', 'eye_', 'ear_']
     all_dfs = []
 
@@ -83,7 +83,7 @@ def normalize_pose(pose_df):
         )
 
         # Use the mean of the distances as the scaling factor
-        scale = (left_dist + right_dist) / 2
+        scale = (left_dist + right_dist)*10
 
         # Avoid division by zero
         if scale > 0:
@@ -185,7 +185,7 @@ def load_normalized_data(filepath):
 ############################################
 
 if __name__ == "__main__":
-    combined_df = load_pose_data_of_interest(21, "shadow")
+    combined_df = load_pose_data_of_interest(83, "shadow")
     normalized_df = normalize_pose(combined_df)
     rescaled_df = rescale_pose_for_display(normalized_df)
 
