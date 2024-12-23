@@ -16,12 +16,20 @@ coco17_labels = [
     'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
 ]
 
-# Keypoints to keep for the GMM
+# # Keypoints to keep for the GMM
+# relevant_keypoints = [
+#     'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
+#     'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
+#     'left_knee', 'right_knee'
+# ]
+
 relevant_keypoints = [
-    'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
-    'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
-    'left_knee', 'right_knee'
-]
+                        'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
+                        'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
+                        'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
+                     ]
+    
+    
 relevant_indices = [coco17_labels.index(kp) for kp in relevant_keypoints]
 
 # Load the GMM model
@@ -36,6 +44,7 @@ pose_model = RTMO(
     backend=backend,
     device=device
 )
+
 
 def normalize_pose_np(filtered_keypoints):
     """
@@ -60,14 +69,15 @@ def normalize_pose_np(filtered_keypoints):
     return filtered_keypoints
 
 
-output_filename = "../../dataset/videos/validation-videos/gmm_result_output2.mp4"
+trial_no = 5
+output_filename = f"../../dataset/videos/validation-videos/gmm_result_output{trial_no}.mp4"
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-out = cv2.VideoWriter(output_filename, fourcc, 30, (1280, 720))
+out = cv2.VideoWriter(output_filename, fourcc, 30, (1920, 1080))
 
 # Open the video file or webcam
-cap = cv2.VideoCapture("../../dataset/videos/validation-videos/output2.mp4")
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+cap = cv2.VideoCapture(f"../../dataset/videos/validation-videos/videos/output{trial_no}.mp4")
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
 if not cap.isOpened():
     print("Error: Unable to access the video source.")
@@ -112,11 +122,11 @@ while True:
                 print(f"GMM Inference Time: {gmm_inference_time:.2f} ms")
 
                 # Decide message based on log-likelihood
-                if log_likelihood < 400:
+                if log_likelihood < 450:
                     message = "Not Boxing"
                     message_color = (0, 0, 255)  # Red
                 else:
-                    message = "Shadow Boxing"
+                    message = "Boxing"
                     message_color = (0, 255, 0)  # Green
             break
 
@@ -139,7 +149,7 @@ while True:
         cv2.putText(frame, message, (message_x, message_y), font, font_scale, message_color, thickness)
 
     # Display skeleton and frame
-    frame = draw_skeleton(frame, keypoints, scores, kpt_thr=0.5)
+    frame = draw_skeleton(frame, keypoints, scores, kpt_thr=0.8)
     cv2.imshow('Pose Estimation and Log-Likelihood', frame)
     out.write(frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):

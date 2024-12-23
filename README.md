@@ -2,7 +2,7 @@
 
 ## Overview
 
-**Shadow-Boxer** is a research project focused on building a smart shadow-boxing learning module. The module has two main components:
+**Shadow-Boxer** is a research project focused on building a smart shadow-boxing learning module using a single camera. The module has two main components:
 
 1. **Smart Shadow-Boxing Assistant**  
    - Reproduces realistic shadow-boxing strategies given a human pose.  

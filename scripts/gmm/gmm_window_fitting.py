@@ -105,7 +105,7 @@ if __name__ == "__main__":
     selected_keypoints = [
         'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
         'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
-        'left_knee', 'right_knee'
+        'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
     ]
     
     # # Define the keypoints to include in the GMM

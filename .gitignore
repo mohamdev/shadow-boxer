@@ -2,3 +2,4 @@
 /models/gmm/*
 /models/pose_estimation/*
 /models/rl_policies/*
+/dataset/2D-poses/shadow/*

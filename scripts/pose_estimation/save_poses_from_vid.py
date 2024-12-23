@@ -23,7 +23,7 @@ pose_model = RTMO(
     device=device
 )
 
-trial_no = "6"
+trial_no = "23"
 # Open the video file or webcam
 cap = cv2.VideoCapture("../../dataset/videos/shadow/shadow" + trial_no + ".mp4")
 
