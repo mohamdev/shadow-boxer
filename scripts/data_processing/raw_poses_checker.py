@@ -121,7 +121,7 @@ def draw_poses_on_black_image(combined_df):
 
         # Finally, show the image with all poses
         cv2.imshow("All Poses on Black Image", black_image)
-        cv2.waitKey(1)
+        cv2.waitKey(30)
     cv2.destroyAllWindows()
 
 ############################################
@@ -130,7 +130,7 @@ def draw_poses_on_black_image(combined_df):
 
 if __name__ == "__main__":
     # Load your combined DataFrame
-    combined_df = load_pose_data_of_interest(21, "shadow")
+    combined_df = load_pose_data_of_interest(86, "shadow")[84:]
     draw_poses_on_black_image(combined_df)
 
 

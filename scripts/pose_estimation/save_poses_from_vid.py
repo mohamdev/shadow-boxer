@@ -24,7 +24,7 @@ pose_model = RTMO(
     device=device
 )
 
-for i in range(87, 88):
+for i in range(87, 93):
     trial_no = str(i)
     # Open the video file or webcam
     cap = cv2.VideoCapture("../../dataset/videos/shadow/shadow" + str(trial_no) + ".mp4")
@@ -96,14 +96,14 @@ for i in range(87, 88):
     cap.release()
     cv2.destroyAllWindows()
 
-    # Load the generated CSV file and concatenate the trajectory N times
-    N = 10  # Number of times to repeat the trajectory
-    print("Concatenating the trajectory...")
-    df = pd.read_csv(csv_file_path)
-    concatenated_df = pd.concat([df] * N, ignore_index=True)
+    # # Load the generated CSV file and concatenate the trajectory N times
+    # N = 1  # Number of times to repeat the trajectory
+    # print("Concatenating the trajectory...")
+    # df = pd.read_csv(csv_file_path)
+    # concatenated_df = pd.concat([df] * N, ignore_index=True)
 
-    # Save the concatenated trajectories back to the same file
-    concatenated_df.to_csv(csv_file_path, index=False)
-    print(f"Concatenated trajectory saved to {csv_file_path}")
+    # # Save the concatenated trajectories back to the same file
+    # concatenated_df.to_csv(csv_file_path, index=False)
+    # print(f"Concatenated trajectory saved to {csv_file_path}")
 
 
