@@ -20,7 +20,7 @@ class VAE(nn.Module):
             nn.Linear(hidden_dims[0], hidden_dims[1]),
             nn.ReLU()
         )
-        
+
         self.fc_mu = nn.Linear(hidden_dims[1], latent_dim)
         self.fc_logvar = nn.Linear(hidden_dims[1], latent_dim)
 
@@ -103,8 +103,8 @@ if __name__ == "__main__":
     batch_size = 64
     learning_rate = 1e-3
     epochs = 20
-    latent_dim = 1500  # Adjusted for larger latent space
-    hidden_dims = [2048, 1024, 512]  # Adjusted to support larger input and efficient encoding
+    latent_dim = 1024  # Adjusted for larger latent space
+    hidden_dims = [1024, 512, 512]  # Adjusted to support larger input and efficient encoding
     n_classes = 3
 
     # Device configuration
@@ -121,29 +121,30 @@ if __name__ == "__main__":
 
     # Initialize and train VAE
     input_dim = sequences.shape[1]
-    vae = VAE(input_dim=input_dim, hidden_dims=hidden_dims, latent_dim=latent_dim).to(device)  # Move model to device
-    train_vae(vae, dataloader, epochs, learning_rate, device)
+    print("input dim:", input_dim)
+    # vae = VAE(input_dim=input_dim, hidden_dims=hidden_dims, latent_dim=latent_dim).to(device)  # Move model to device
+    # train_vae(vae, dataloader, epochs, learning_rate, device)
 
-    # Save the trained encoder
-    torch.save(vae.state_dict(), model_save_path)
-    print(f"VAE encoder saved to {model_save_path}")
+    # # Save the trained encoder
+    # torch.save(vae.state_dict(), model_save_path)
+    # print(f"VAE encoder saved to {model_save_path}")
 
-    # Encode data to latent space
-    latent_vectors = encode_data(vae, dataloader, device)
+    # # Encode data to latent space
+    # latent_vectors = encode_data(vae, dataloader, device)
 
-    # Train GMM on latent vectors
-    gmm = GaussianMixture(n_components=n_classes, random_state=42, verbose=2)
-    gmm.fit(latent_vectors)
-    joblib.dump(gmm, gmm_save_path)
-    print(f"GMM model saved to {gmm_save_path}")
+    # # Train GMM on latent vectors
+    # gmm = GaussianMixture(n_components=n_classes, random_state=42, verbose=2)
+    # gmm.fit(latent_vectors)
+    # joblib.dump(gmm, gmm_save_path)
+    # print(f"GMM model saved to {gmm_save_path}")
 
-    # Optionally visualize clusters using PCA
-    from sklearn.decomposition import PCA
-    cluster_labels = gmm.predict(latent_vectors)
-    pca = PCA(n_components=2)
-    reduced_data = pca.fit_transform(latent_vectors)
-    plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=cluster_labels, cmap='viridis', alpha=0.7)
-    plt.title("PCA Visualization of Clusters")
-    plt.xlabel("Principal Component 1")
-    plt.ylabel("Principal Component 2")
-    plt.show()
+    # # Optionally visualize clusters using PCA
+    # from sklearn.decomposition import PCA
+    # cluster_labels = gmm.predict(latent_vectors)
+    # pca = PCA(n_components=2)
+    # reduced_data = pca.fit_transform(latent_vectors)
+    # plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=cluster_labels, cmap='viridis', alpha=0.7)
+    # plt.title("PCA Visualization of Clusters")
+    # plt.xlabel("Principal Component 1")
+    # plt.ylabel("Principal Component 2")
+    # plt.show()

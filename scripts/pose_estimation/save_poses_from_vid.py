@@ -1,6 +1,7 @@
 import cv2
 import time
 import csv
+import pandas as pd
 from rtmlib import RTMPose, RTMO, draw_skeleton
 
 # Configuration
@@ -17,13 +18,13 @@ coco17_labels = [
 
 # Initialize the RTMPose model
 pose_model = RTMO(
-    onnx_model='../../models/pose_estimation/rtmo-l.onnx', #replace by your .onnx rtmo model
+    onnx_model='../../models/pose_estimation/rtmo-l.onnx',  # Replace by your .onnx rtmo model
     model_input_size=(640, 640),
     backend=backend,
     device=device
 )
 
-for i in range(76,83):
+for i in range(87, 88):
     trial_no = str(i)
     # Open the video file or webcam
     cap = cv2.VideoCapture("../../dataset/videos/shadow/shadow" + str(trial_no) + ".mp4")
@@ -35,7 +36,8 @@ for i in range(76,83):
     print("Processing video... Press 'q' to stop.")
 
     # Open CSV file for writing
-    csv_file = open("../../dataset/2D-poses/shadow/shadow" + str(trial_no) + ".csv", mode='w', newline='')
+    csv_file_path = "../../dataset/2D-poses/shadow/shadow" + str(trial_no) + ".csv"
+    csv_file = open(csv_file_path, mode='w', newline='')
     csv_writer = csv.writer(csv_file)
 
     # Write the header row to the CSV
@@ -90,6 +92,18 @@ for i in range(76,83):
     # Close CSV file
     csv_file.close()
 
-# Release the video source and close windows
-cap.release()
-cv2.destroyAllWindows()
+    # Release the video source and close windows
+    cap.release()
+    cv2.destroyAllWindows()
+
+    # Load the generated CSV file and concatenate the trajectory N times
+    N = 10  # Number of times to repeat the trajectory
+    print("Concatenating the trajectory...")
+    df = pd.read_csv(csv_file_path)
+    concatenated_df = pd.concat([df] * N, ignore_index=True)
+
+    # Save the concatenated trajectories back to the same file
+    concatenated_df.to_csv(csv_file_path, index=False)
+    print(f"Concatenated trajectory saved to {csv_file_path}")
+
+

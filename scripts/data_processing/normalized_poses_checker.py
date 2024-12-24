@@ -50,7 +50,7 @@ def get_keypoint_xy_and_score(row, kp_name):
 def draw_poses_on_black_image(rescaled_df):
     width, height = 1280, 720
 
-    for _, row in rescaled_df[900000:].iterrows():
+    for _, row in rescaled_df[1400000:].iterrows():
         black_image = np.zeros((height, width, 3), dtype=np.uint8)
         keypoints_list = []
         scores_list = []
@@ -74,7 +74,7 @@ def draw_poses_on_black_image(rescaled_df):
         )
 
         cv2.imshow("Rescaled Poses", black_image)
-        cv2.waitKey(15)
+        cv2.waitKey(1)
     cv2.destroyAllWindows()
 
 
@@ -88,7 +88,7 @@ def load_normalized_data(filepath):
 if __name__ == "__main__":
 
     # Save the normalized data
-    save_path = "../../dataset/2D-poses/shadow/shadow_dataset_normalized.csv"
+    save_path = "../../dataset/2D-poses/shadow/shadow_dataset_poses_normalized.csv"
     normalized_df = load_normalized_data(save_path)
     rescaled_df = rescale_pose_for_display(normalized_df)
 

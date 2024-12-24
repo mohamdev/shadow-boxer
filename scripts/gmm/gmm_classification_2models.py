@@ -24,25 +24,11 @@ relevant_keypoints_normalization = [
 ]
 relevant_indices_normalization = [coco17_labels.index(kp) for kp in relevant_keypoints_normalization]
 
-# relevant_keypoints = [
-#     'left_elbow', 'right_elbow',
-#     'left_wrist', 'right_wrist',
-#     'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
-# ]
-
-# relevant_keypoints = [
-#         'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
-#         'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
-#         'left_knee', 'right_knee' #, 'left_ankle', 'right_ankle'
-# ]
-
 relevant_keypoints = [
-    #'left_shoulder', 'right_shoulder', 
-    'left_elbow', 'right_elbow', 'left_wrist', 
-    'right_wrist', #, 'left_hip', 'right_hip',
-    'left_knee', 'right_knee' #, 'left_ankle', 'right_ankle'
+    'left_elbow', 'right_elbow',
+    'left_wrist', 'right_wrist',
+    'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
 ]
-
 relevant_indices = [coco17_labels.index(kp) for kp in relevant_keypoints]
 
 # Initialize pose buffer for the sliding window
@@ -50,9 +36,13 @@ buffer_size = 10
 n_classes = 3
 
 # Load the GMM model
-gmm_model_path = f"../../models/gmm/shadow_boxing_gmm_{n_classes}classes_{buffer_size}seq_newset.pkl"
-gmm = joblib.load(gmm_model_path)
-print(f"GMM model loaded from {gmm_model_path}")
+gmm_strike_model_path = f"../../models/gmm/shadow_boxing_gmm_2classes_10seq.pkl"
+gmm_strike = joblib.load(gmm_strike_model_path)
+print(f"GMM model loaded from {gmm_strike_model_path}")
+
+gmm_guard_model_path = f"../../models/gmm/shadow_boxing_gmm_3classes_10seq.pkl"
+gmm_guard = joblib.load(gmm_guard_model_path)
+print(f"GMM model loaded from {gmm_guard_model_path}")
 
 # Initialize the RTMPose model
 pose_model = RTMO(
@@ -85,7 +75,7 @@ def normalize_pose_np(filtered_keypoints):
     return filtered_keypoints
 
 
-output_filename = f"../../dataset/videos/validation-videos/gmm_classification_output_{buffer_size}_{n_classes}.mp4"
+output_filename = f"../../dataset/videos/validation-videos/gmm_classification_output_{buffer_size}_{n_classes}_ok.mp4"
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 out = cv2.VideoWriter(output_filename, fourcc, 30, (1280, 720))
 
@@ -127,12 +117,27 @@ while True:
                 # Measure GMM inference time
                 start_time = time.time()
                 buffer_vector = np.concatenate(pose_buffer)
-                predicted_class = gmm.predict(buffer_vector.reshape(1, -1))[0]  # Predict class
-                class_probabilities = gmm.predict_proba(buffer_vector.reshape(1, -1))[0]  # Get probabilities for each class
-                gmm_inference_time = (time.time() - start_time) * 1000  # ms
+                buffer_vector_bis = np.copy(buffer_vector)
+               
+                guard_predicted_class = gmm_guard.predict(buffer_vector.reshape(1, -1))[0]  # Predict class
+                guard_class_probabilities = gmm_guard.predict_proba(buffer_vector.reshape(1, -1))[0]  # Get probabilities for each class
 
+                strike_predicted_class = gmm_strike.predict(buffer_vector.reshape(1, -1))[0]  # Predict class
+                strike_class_probabilities = gmm_strike.predict_proba(buffer_vector.reshape(1, -1))[0]  # Get probabilities for each class
+
+                predicted_class = 0
+                if guard_predicted_class == 1:  #Si strike detecté, alors c'est strike.
+                    predicted_class = 1
+                elif strike_predicted_class == 0:
+                    predicted_class = 0
+                else:
+                    predicted_class = 2
+
+                class_probabilities = [strike_class_probabilities[0], guard_class_probabilities[1], guard_class_probabilities[0]]
+
+                gmm_inference_time = (time.time() - start_time) * 1000  # ms
                 # Define class messages
-                class_labels = ["0", "1", "2"]
+                class_labels = ["STRIKING !!", "GUARD", "NOT BOXING"]
                 class_colors = [(255, 0, 0)] * len(class_labels)  # Default red for all classes
                 class_colors[predicted_class] = (0, 255, 0)  # Green for predicted class
 
@@ -141,6 +146,7 @@ while True:
                 font_scale = 0.9
                 thickness = 2
 
+                text_x, text_y, text_size = 0, 0, 0
                 for idx, label in enumerate(class_labels):
                     class_text = f"{label}: {class_probabilities[idx]:.2f}"
                     text_size, _ = cv2.getTextSize(class_text, font, font_scale, thickness)
@@ -148,15 +154,20 @@ while True:
                     text_y = 30 + idx * (text_size[1] + 10)
                     cv2.putText(frame, class_text, (text_x, text_y), font, font_scale, class_colors[idx], thickness)
 
+                text_x = frame.shape[1] - text_size[0] - 10
+                text_y = 30 + 4 * (text_size[1] + 10)
+                class_text = f"Inference: {gmm_inference_time:.2f} ms"
+                cv2.putText(frame, class_text, (text_x, text_y), font, font_scale,(255, 0, 0), thickness)
                 print(f"GMM Inference Time: {gmm_inference_time:.2f} ms, Predicted Class: {predicted_class}, Probabilities: {class_probabilities}")
             break
 
     # Display skeleton and frame
     frame = draw_skeleton(frame, keypoints, scores, kpt_thr=0.5)
     cv2.imshow('Pose Estimation and Classification', frame)
-    out.write(frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
+    out.write(frame)
+
 out.release()
 cap.release()
 cv2.destroyAllWindows()

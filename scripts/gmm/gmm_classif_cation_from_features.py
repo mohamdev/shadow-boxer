@@ -3,9 +3,6 @@ import time
 from rtmlib import RTMO, draw_skeleton
 import joblib
 import numpy as np
-import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader, TensorDataset
 from sklearn.mixture import GaussianMixture
 
 # Configuration
@@ -20,7 +17,7 @@ coco17_labels = [
     'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
 ]
 
-# Keypoints to keep for the VAE
+# Keypoints to keep for classification
 relevant_keypoints = [
     'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
     'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
@@ -28,53 +25,8 @@ relevant_keypoints = [
 ]
 relevant_indices = [coco17_labels.index(kp) for kp in relevant_keypoints]
 
-# Load the VAE encoder and GMM model
-vae_model_path = "../../models/vae_encoder.pth"
-gmm_model_path = "../../models/gmm_latent.pkl"
-latent_dim = 1024
-
-# Define the VAE class (must match training architecture)
-class VAE(nn.Module):
-    def __init__(self, input_dim, hidden_dims, latent_dim):
-        super(VAE, self).__init__()
-        self.encoder = nn.Sequential(
-            nn.Linear(input_dim, hidden_dims[0]),
-            nn.ReLU(),
-            nn.Linear(hidden_dims[0], hidden_dims[1]),
-            nn.ReLU()
-        )
-        
-        self.fc_mu = nn.Linear(hidden_dims[1], latent_dim)
-        self.fc_logvar = nn.Linear(hidden_dims[1], latent_dim)
-
-        # Decoder
-        self.decoder = nn.Sequential(
-            nn.Linear(latent_dim, hidden_dims[1]),
-            nn.ReLU(),
-            nn.Linear(hidden_dims[1], hidden_dims[0]),
-            nn.ReLU(),
-            nn.Linear(hidden_dims[0], input_dim),
-            nn.Sigmoid()
-        )
-
-    def reparameterize(self, mu, logvar):
-        std = torch.exp(0.5 * logvar)
-        eps = torch.randn_like(std)
-        return mu + eps * std
-    
-    def forward(self, x):
-        h = self.encoder(x)
-        mu = self.fc_mu(h)
-        logvar = self.fc_logvar(h)
-        z = self.reparameterize(mu, logvar)
-        x_reconstructed = self.decoder(z)
-        return x_reconstructed, mu, logvar
-
-vae = VAE(input_dim=51 * 30, hidden_dims=[1024, 512, 512], latent_dim=latent_dim).to(device)
-vae.load_state_dict(torch.load(vae_model_path, map_location=device))
-vae.eval()
-print(f"VAE encoder loaded from {vae_model_path}")
-
+# Load GMM model
+gmm_model_path = "../../models/gmm/shadow_boxing_gmm_classes_allfeatures.pkl"
 gmm = joblib.load(gmm_model_path)
 print(f"GMM model loaded from {gmm_model_path}")
 
@@ -168,7 +120,7 @@ def extract_features(raw_keypoints, normalized_keypoints, scores, raw_keypoints_
 
     return features
 
-output_filename = "../../dataset/videos/validation-videos/gmm_classification_output5.mp4"
+output_filename = "../../dataset/videos/validation-videos/gmm_classification_output6.mp4"
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 out = cv2.VideoWriter(output_filename, fourcc, 30, (1280, 720))
 
@@ -199,7 +151,7 @@ while True:
     keypoints = keypoints[:1]
     scores = scores[:1]
     if keypoints is not None and scores is not None:
-        for i in range(keypoints.shape[0]):  # Iterate over detected poses
+        for i in range(keypoints.shape[0]):
             raw_keypoints = keypoints[i, relevant_indices, :2]
 
             raw_keypoints_buffer.append(raw_keypoints)
@@ -214,17 +166,13 @@ while True:
                 pose_buffer.pop(0)
 
             if len(pose_buffer) == buffer_size:
-                # Convert buffer to tensor and pass through VAE forward function
-                print("pose buffer dims:", np.shape(pose_buffer))
-                buffer_tensor = torch.tensor(np.concatenate(pose_buffer), dtype=torch.float32).unsqueeze(0).to(device)
-                _, latent_vector, _ = vae(buffer_tensor)  # Forward function returns (reconstructed, mu, logvar)
-
-                latent_vector = latent_vector.cpu().detach().numpy()  # Extract the latent vector and move to CPU for GMM
+                # Convert features buffer to numpy array
+                feature_array = np.array(pose_buffer).flatten().reshape(1, -1)
 
                 # Measure GMM inference time
                 start_time = time.time()
-                predicted_class = gmm.predict(latent_vector)[0]  # Predict class
-                class_probabilities = gmm.predict_proba(latent_vector)[0]  # Get probabilities for each class
+                predicted_class = gmm.predict(feature_array)[0]  # Predict class
+                class_probabilities = gmm.predict_proba(feature_array)[0]  # Get probabilities for each class
                 gmm_inference_time = (time.time() - start_time) * 1000  # ms
 
                 # Define class messages
