@@ -13,7 +13,7 @@ def load_normalized_data(filepath):
     """
     return pd.read_csv(filepath)
 
-def split_data(normalized_df, test_size=0.2, random_state=42):
+def split_data(normalized_df, test_size=0.01, random_state=42):
     """
     Split the dataset into learning and test sets.
     """
