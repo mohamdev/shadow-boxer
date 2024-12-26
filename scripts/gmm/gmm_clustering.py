@@ -13,11 +13,14 @@ def load_normalized_data(filepath):
     """
     return pd.read_csv(filepath)
 
-def split_data(normalized_df, test_size=0.01, random_state=42):
+def split_data(normalized_df, test_size=0):
     """
-    Split the dataset into learning and test sets.
+    Split the dataset into learning and test sets by taking the first `1-test_size` for training
+    and the remaining for testing.
     """
-    train_df, test_df = train_test_split(normalized_df, test_size=test_size, random_state=random_state)
+    split_index = int(len(normalized_df) * (1 - test_size))
+    train_df = normalized_df.iloc[:split_index]
+    test_df = normalized_df.iloc[split_index:]
     return train_df, test_df
 
 def generate_pose_sequences(df, keypoints, sequence_length):
@@ -104,7 +107,7 @@ def analyze_clusters(cluster_labels, n_components):
     plt.show()
 
 if __name__ == "__main__":
-    save_path = "../../dataset/2D-poses/shadow/shadow_dataset_poses_normalized.csv"
+    save_path = "../../dataset/2D-poses/shadow/shadow_dataset_poses_normalized_newset.csv"
     print("Loading data...")
     normalized_df = load_normalized_data(save_path)
 
@@ -113,9 +116,9 @@ if __name__ == "__main__":
 
     print("Data split, generating pose sequences...")
     selected_keypoints = [
-        #'left_shoulder', 'right_shoulder', 
+        'left_shoulder', 'right_shoulder', 
         'left_elbow', 'right_elbow', 'left_wrist', 
-        'right_wrist', #, 'left_hip', 'right_hip',
+        'right_wrist', , 'left_hip', 'right_hip',
         'left_knee', 'right_knee' #, 'left_ankle', 'right_ankle'
     ]
     # selected_keypoints = [

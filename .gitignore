@@ -4,3 +4,4 @@
 /models/rl_policies/*
 /dataset/2D-poses/shadow/*
 /dataset/2D-poses/hook/*
+/clustering/

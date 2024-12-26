@@ -70,7 +70,7 @@ def generate_pose_sequences(df, keypoints, sequence_length=30):
 
 if __name__ == "__main__":
     # Parameters
-    latent_dim = 200
+    latent_dim = 1000
     sequence_length = 30
     batch_size = 64
     epochs = 100

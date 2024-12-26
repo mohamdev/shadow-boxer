@@ -73,7 +73,7 @@ class VAE(torch.nn.Module):
         return self.decode(z), mu, logvar
 
 # Load the trained VAE model
-latent_dim = 200
+latent_dim = 1000
 input_dim = len(relevant_keypoints) * 2 * 30  # 30-frame sliding window
 vae = VAE(input_dim=input_dim, latent_dim=latent_dim).to(device)
 vae.load_state_dict(torch.load("../../models/vae/shadow_boxing_vae.pth"))
